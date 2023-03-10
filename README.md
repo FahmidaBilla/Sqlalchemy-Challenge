@@ -55,7 +55,7 @@ Station Analysis includes these following steps:
 5. Closing session.
 
 
-# Part 2: Design Your Climate App
+# Part 2: Design Climate App
 
 After the initial analysis have been completed, I designed a Flask API  based on the queries which has been saved as app.py. The steps were done as below:
 
