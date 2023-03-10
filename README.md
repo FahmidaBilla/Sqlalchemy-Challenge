@@ -23,11 +23,15 @@ Precipitation analysis is consisted of the following steps:
 6. Plot the Dataframe using matplotlib.
 
 
+![score_prcp_df](https://user-images.githubusercontent.com/120361200/224225243-4fa9fc3b-f1d3-496c-9447-abe45661181e.png)
+
 
 
 7. Used Pandas to find summary statistics for the precipitation data, where mean = 0.177279 and std. dev = 0.461190
 
 
+
+<img width="172" alt="Summary_statistics" src="https://user-images.githubusercontent.com/120361200/224225284-67f5a8bd-36bb-43c7-ae38-dc7824b7815c.png">
 
 
 
@@ -43,6 +47,8 @@ Station Analysis includes these following steps:
 
 4. Design a query to get the previous 12 months of temperature observation (TOBS) data by filtering the station thaat has greates no of observations, performing query for the previous 12 months of TOBS data for that station and plotting the result as a histogram. 
 
+
+![station_analysis](https://user-images.githubusercontent.com/120361200/224225319-ae2d579e-0468-4f22-a554-a74f3519b4ec.png)
 
 
 
@@ -75,8 +81,7 @@ After the initial analysis have been completed, I designed a Flask API  based on
     - For a specified start date and end date, calculate TMIN, TAVG, and TMAX for the dates from the start date to the end date, inclusive.
 
 
-
-
+<img width="391" alt="Screenshot 2023-03-09 at 11 44 11 PM" src="https://user-images.githubusercontent.com/120361200/224225558-83b0f333-7da0-43c6-b007-520b60314d28.png">
 
 
 
