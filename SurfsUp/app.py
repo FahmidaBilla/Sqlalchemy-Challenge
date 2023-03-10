@@ -43,8 +43,11 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end>"
+        f"/api/v1.0/start<br/>"
+        f"Enter Start date in YYYY-MM-DD format<br>"
+        f"/api/v1.0/start/end<br>"
+        f"Enter Start and End date in YYYY-MM-DD format"
+
     )
 
 # 2. Return the JSON representation or Precipitation analysis
@@ -73,41 +76,35 @@ def precipitation():
     session.close()
 
     # Create dictionary
-    date_prcp = []
+    date_prcp = {}
     for date, prcp in results:
-        prcp_dict = {}
-        prcp_dict['date'] = date
-        prcp_dict['prcp'] = prcp
-        date_prcp.append(prcp_dict)
         
+        date_prcp[date] = prcp
+    
+        
+    # Return the JSON representation of dictionary.
+
     return jsonify(date_prcp)
 
 
 # 3. Return a JSON list of stations
 
 @app.route("/api/v1.0/stations")
-def station():
+def stations():
 
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     # Design a query to calculate the total number stations in the dataset
-    stations = session.query(Station.id, Station.station, Station.name).all()
+    station_info = session.query(Station.id, Station.station, Station.name).all()
 
     session.close()
     
-    # Create station list
+    # Convert list of tuples into normal list
 
-    stations_list = []
-    for id, station, name in stations:
-        station_dict = {}
-        station_dict['id'] = station
-        station_dict['station'] = id
-        station_dict['name'] = name
-        stations_list.appent(station_dict)
+    all_station_list = list(np.ravel(station_info))
 
-
-    return jsonify(stations_list)
+    return jsonify(all_station_list)
 
 
 # 4. Return a JSON list of tem
@@ -118,17 +115,19 @@ def tobs():
      # Create our session (link) from Python to the DB
     session = Session(engine)
 
+     # Calculate the date one year from the last date in data set.
+
+    query_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    # Find most active station
     active_station = session.query(Measurement.station, func.count(Measurement.station)).\
                 group_by(Measurement.station).\
                 order_by((func.count(Measurement.station)).desc()).all()
     
-    most_active_station = active_station[0]
+    most_active_station = active_station[0][0]
 
     print(f"{most_active_station} is the most active station")
 
-    # Calculate the date one year from the last date in data set.
-
-    query_date = dt.date(2017, 8, 23) - dt.timedelta(days=365)
 
     station_temperature = session.query(Measurement.date, Measurement.tobs).\
     filter(Measurement.date >= query_date).\
@@ -160,72 +159,73 @@ def start(start):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    sel = [Measurement.station,
-       func.min(Measurement.tobs),
-       func.max(Measurement.tobs),
-       func.avg(Measurement.tobs)]
-    
-    start_date_temp = session.query(*sel).\
-        filter(func.strftime("%Y-%D-%M", Measurement.date) >= start).\
-        group_by(Measurement.date).\
-        order_by(Measurement.date).all
-    
+    sel = [Measurement.date,
+           func.min(Measurement.tobs), 
+           func.max(Measurement.tobs), 
+           func.avg(Measurement.tobs)]
 
+    # Query to calculate TMIN, TAVG, and TMAX for all the specific dates greater than or equal to the start date.
+    start_temp_data = session.query(*sel).\
+                    filter(func.strftime("%Y-%m-%d", Measurement.date) >= start).\
+                    group_by(Measurement.date).\
+                    order_by(Measurement.date).all()
+    
+    
     session.close()
-    
 
-    # Make list of temperature for start date
-    start_end_temp_values = []
-    for min, max, avg, date in start_date_temp:
-        start_end_dict = {}
-        start_end_dict["Min_Temp"] = min
-        start_end_dict["Max_Temp"] = max
-        start_end_dict["Avg_Temp"] = avg
-        start_end_dict["Date"] = date
-        start_end_temp_values.append(start_end_dict)
+    # Create a list of dictionary to store date, min, max and avg temperature values
+    start_temp_list = []
+    for date, min, max, avg in start_temp_data:
+        start_dict = {}
+        start_dict["date"] = date
+        start_dict["min_temp"] = min
+        start_dict["max_temp"] = max
+        start_dict["avg_temp"] = avg
+        start_temp_list.append(start_dict)
 
     # Return JSON for start date
         
-    return jsonify(start_end_temp_values)
+    return jsonify(start_temp_list)
 
 # Specific start-end date
 
 @app.route("/api/v1.0/<start>/<end>")
-def start_end_date(start, end):
+def start_end(start, end):
 
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    sel = [Measurement.station,
-       func.min(Measurement.tobs),
-       func.max(Measurement.tobs),
-       func.avg(Measurement.tobs)]
+    sel = [Measurement.date,
+           func.min(Measurement.tobs), 
+           func.max(Measurement.tobs), 
+           func.avg(Measurement.tobs)]
+
+    # Query to calculate TMIN, TAVG, and TMAX for all the specific dates from start date to end date
     
-    start_date_temp = session.query(*sel).\
-        filter(func.strftime("%Y-%D-%M", Measurement.date) >= start).\
-        filter(func.strftime("%Y-%D-%M", Measurement.date) <= end).\
-        group_by(Measurement.date).\
-        order_by(Measurement.date).all
+    start_end_temp_data = session.query(*sel).\
+                    filter(func.strftime("%Y-%m-%d", Measurement.date) >= start).\
+                    filter(func.strftime("%Y-%m-%d", Measurement.date) <= end).\
+                    group_by(Measurement.date).\
+                    order_by(Measurement.date).all()
+    
     
     session.close()
-    
 
-    # Make list of temperature for start date
-    start_end_temp_values = []
-    for min, max, avg, date in start_date_temp:
+    # Create a list of dictionary to store date, min, max and avg temperature values
+    start_end_temp_list = []
+    for date, min, max, avg in start_end_temp_data:
         start_end_dict = {}
-        start_end_dict["Min_Temp"] = min
-        start_end_dict["Max_Temp"] = max
-        start_end_dict["Avg_Temp"] = avg
-        start_end_dict["Date"] = date
-        start_end_temp_values.append(start_end_dict)
+        start_end_dict["date"] = date
+        start_end_dict["min_temp"] = min
+        start_end_dict["max_temp"] = max
+        start_end_dict["avg_temp"] = avg
+        start_end_temp_list.append(start_end_dict)
+    
+    # Return a JSON list for Start and End date
 
-    # Return JSON for start date
-        
-    return jsonify(start_end_temp_values)
+    return jsonify(start_end_temp_list)
 
 
-#############################################################
 
 if __name__ == '__main__':
     app.run(debug=True)
